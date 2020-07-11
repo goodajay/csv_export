@@ -28,6 +28,15 @@ The csv export functionality built is in response to the code test conducted by 
 	c. read the content of the downloaded file and then create the required orders.csv under the same path
 		var/downloads/orders.csv
 
+	#Add ons
+	The command has input parameter to whether include the latitude and longitude in csv or not
+	To include the latitude and longitude, the command is
+	php bin\console app:export-orders-csv true
+
+	The lang and lat values will only be added if the value is true, other than that it will skip the latitude and longitude values
+
+
+
 #Extra features
 Google geocode api is being used to fetch the latitude and longitude of the address
 

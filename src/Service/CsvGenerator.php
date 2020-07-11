@@ -10,14 +10,22 @@ class CsvGenerator
 	private $appKernel;
 	private $orders = array();
 	private $headers = array();
+	private $latlang;
 
 	public function __construct(string $rootPath)
 	{
 		$this->rootPath = $rootPath;
 	}
 
-	public function set_headers(array $headers){
+	public function set_headers(array $headers, string $latlang=''){
 		$this->headers = $headers;
+
+		$this->latlang = ($latlang === 'true') ? true : false;
+
+		if($this->latlang){
+	 		$this->headers[] = 'latitude';
+	 		$this->headers[] = 'longitude';
+	 	}
 	}
 
 	public function read_csv()
@@ -46,10 +54,14 @@ class CsvGenerator
 		if(!empty($this->orders)){
 			foreach($this->orders as $order){
 				$decoded_order = json_decode($order);
-				$shipping_address = implode(" ", (array)($decoded_order->customer->shipping_address));
-				$latlang = LatLangAddress::get_lat_lang($shipping_address);
-				$decoded_order->customer->shipping_address->latitude = $latlang['latitude'];
-				$decoded_order->customer->shipping_address->longitude = $latlang['longitude'];
+
+				if($this->latlang){
+					$shipping_address = implode(" ", (array)($decoded_order->customer->shipping_address));
+					$latlang = LatLangAddress::get_lat_lang($shipping_address);
+					$decoded_order->customer->shipping_address->latitude = $latlang['latitude'];
+					$decoded_order->customer->shipping_address->longitude = $latlang['longitude'];
+				}
+
 				yield $decoded_order;
 			}	
 		}
@@ -62,7 +74,7 @@ class CsvGenerator
 		$csv_data = array();
 
 		if(empty($this->headers)){
-			echo "headers are missing";
+			echo "headers are missing\n";
 			return;
 		}
 
@@ -109,14 +121,17 @@ class CsvGenerator
 			} 
 			
 			$csv_formatted_data['order_id'] = $data->order_id;
- 			$csv_formatted_data['order_datetime'] = $data->order_date;
+ 			$csv_formatted_data['order_datetime'] = $this->format_datetime($data->order_date);
  			$csv_formatted_data['total_order_value'] = round($total_order_value,2);
  			$csv_formatted_data['average_unit_price'] = round($total_order_value/$total_units_count, 2);
  			$csv_formatted_data['distinct_unit_count'] = count($data->items);
  			$csv_formatted_data['total_units_count'] = $total_units_count;
  			$csv_formatted_data['customer_state'] = $data->customer->shipping_address->state;
- 			$csv_formatted_data['latitude'] = $data->customer->shipping_address->latitude;
-			$csv_formatted_data['longitude'] = $data->customer->shipping_address->longitude;
+ 			
+ 			if($this->latlang){
+	 			$csv_formatted_data['latitude'] = $data->customer->shipping_address->latitude;
+				$csv_formatted_data['longitude'] = $data->customer->shipping_address->longitude;
+ 			}
  			
  			$csv_data[] = $csv_formatted_data;
 						
@@ -130,7 +145,13 @@ class CsvGenerator
 		}
 		fclose($fp);
 
-		echo "CSV has been generated in the following path var/downloads/orders.csv";
+		echo "CSV has been generated in the following path var/downloads/orders.csv\n";
+	}
+
+	protected function format_datetime(string $datetime, $displayformat=\DateTimeInterface::ISO8601)
+	{
+		$date = new \DateTime($datetime);
+		return $date->format($displayformat);
 	}
 
 }
