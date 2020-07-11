@@ -44,6 +44,8 @@
  			'distinct_unit_count',
  			'total_units_count',
  			'customer_state',
+ 			'latitude',
+			'longitude'
  		]);
  		
  		$this->csv_generator->export_csv();

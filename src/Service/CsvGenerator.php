@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use App\Service\LatLangAddress;
+
 class CsvGenerator
 {
 	private $rootPath;
@@ -44,6 +46,10 @@ class CsvGenerator
 		if(!empty($this->orders)){
 			foreach($this->orders as $order){
 				$decoded_order = json_decode($order);
+				$shipping_address = implode(" ", (array)($decoded_order->customer->shipping_address));
+				$latlang = LatLangAddress::get_lat_lang($shipping_address);
+				$decoded_order->customer->shipping_address->latitude = $latlang['latitude'];
+				$decoded_order->customer->shipping_address->longitude = $latlang['longitude'];
 				yield $decoded_order;
 			}	
 		}
@@ -109,6 +115,8 @@ class CsvGenerator
  			$csv_formatted_data['distinct_unit_count'] = count($data->items);
  			$csv_formatted_data['total_units_count'] = $total_units_count;
  			$csv_formatted_data['customer_state'] = $data->customer->shipping_address->state;
+ 			$csv_formatted_data['latitude'] = $data->customer->shipping_address->latitude;
+			$csv_formatted_data['longitude'] = $data->customer->shipping_address->longitude;
  			
  			$csv_data[] = $csv_formatted_data;
 						
